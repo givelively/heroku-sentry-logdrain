@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+  echo "Usage: bin/add_drain <source-app> <environment> [proxy-app]"
+  echo ""
+  echo "Walks through adding a log drain from <source-app> to the proxy app"
+  echo "and prints the commands to run."
+  echo ""
+  echo "  <source-app>   The Heroku app whose logs you want to drain"
+  echo "  <environment>   Sentry environment (e.g. production, staging)"
+  echo "  [proxy-app]     The logdrain proxy app (default: from heroku git remote)"
+  exit 1
+fi
+
+SOURCE_APP="$1"
+ENVIRONMENT="$2"
+PROXY_INFO=$(heroku apps:info --json ${3:+-a "$3"})
+PROXY_APP=$(echo "$PROXY_INFO" | ruby -rjson -e 'puts JSON.parse(STDIN.read)["app"]["name"]')
+PROXY_URL=$(echo "$PROXY_INFO" | ruby -rjson -e 'puts JSON.parse(STDIN.read)["app"]["web_url"]')
+
+echo "=== Step 1: Add the log drain ==="
+echo ""
+echo "  heroku drains:add ${PROXY_URL} -a ${SOURCE_APP}"
+echo ""
+echo "Copy the drain token (d.xxxxxxxx-xxxx-...) from the output."
+echo ""
+
+echo "=== Step 2: Update DRAIN_MAP ==="
+echo ""
+
+EXISTING_MAP=$(heroku config:get DRAIN_MAP -a "$PROXY_APP" 2>/dev/null || echo "")
+
+if [ -z "$EXISTING_MAP" ]; then
+  echo "  heroku config:set DRAIN_MAP=\"<drain-token>=${SOURCE_APP}:${ENVIRONMENT}\" -a ${PROXY_APP}"
+else
+  echo "  Current DRAIN_MAP: ${EXISTING_MAP}"
+  echo ""
+  echo "  heroku config:set DRAIN_MAP=\"${EXISTING_MAP},<drain-token>=${SOURCE_APP}:${ENVIRONMENT}\" -a ${PROXY_APP}"
+fi
+
+echo ""
+echo "=== Step 3: Verify ==="
+echo ""
+echo "  heroku logs --tail -a ${SOURCE_APP}"
+echo ""
+echo "Check that logs from ${SOURCE_APP} appear in Sentry under"
+echo "service.name=${SOURCE_APP}, environment=${ENVIRONMENT}."

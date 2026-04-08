@@ -1,0 +1,34 @@
+name: "CI"
+
+on:
+  push: # Run on all pushes
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .tool-versions
+          bundler-cache: true
+
+      - run: bundle exec rspec
+
+  lint:
+    runs-on: ubuntu-latest
+    name: "Lint and security checks"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Ruby and gems
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - run: bundle install
+      - name: Lint Ruby files
+        # NOTE: directly use rubocop because we lint all files,
+        # bin/lint requires addition git knowledge that isn't necessary
+        run: bin/rubocop --parallel
+      - run: bundle exec bundler-audit --update

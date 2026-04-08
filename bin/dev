@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+require 'bundler/setup'
+
+ENV['RACK_ENV'] ||= 'development'
+ENV['PORT'] ||= '5000'
+
+exec 'bundle', 'exec', 'puma', '-C', 'config/puma.rb'

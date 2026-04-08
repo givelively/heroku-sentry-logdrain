@@ -1,0 +1,19 @@
+inherit_gem:
+  gl_rubocop:
+    - default.yml
+
+AllCops:
+  TargetRubyVersion: 3.4
+  NewCops: enable
+
+Rails/Blank:
+  Enabled: false
+
+Rails/Present:
+  Enabled: false
+
+RSpecRails/HaveHttpStatus:
+  Enabled: false
+
+RSpecRails/HttpStatus:
+  Enabled: false
