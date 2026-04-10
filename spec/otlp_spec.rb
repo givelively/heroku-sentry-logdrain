@@ -124,6 +124,37 @@ RSpec.describe OTLP do
           expect(records.first.severity_text).to eq('ERROR')
         end
       end
+
+      context 'when trace_id is present in JSON' do
+        let(:json_body) do
+          '{"method":"GET","path":"/health","status":200,' \
+            '"trace_id":"abcdef0123456789abcdef0123456789",' \
+            '"message":"[200] GET /health"}'
+        end
+
+        it 'forwards trace_id as binary to the log record' do
+          described_class.emit_logs(entries, 'my-app')
+
+          expected = ['abcdef0123456789abcdef0123456789'].pack('H32')
+          expect(records.first.trace_id).to eq(expected)
+        end
+
+        it 'excludes trace_id from attributes' do
+          described_class.emit_logs(entries, 'my-app')
+
+          expect(records.first.attributes.keys).not_to include('trace_id')
+        end
+      end
+
+      context 'when trace_id is absent from JSON' do
+        it 'does not set trace_id on the log record' do
+          described_class.emit_logs(entries, 'my-app')
+
+          invalid_trace = ("\0" * 16).b
+          trace_id = records.first.trace_id
+          expect(trace_id == invalid_trace || trace_id.nil?).to be(true)
+        end
+      end
     end
 
     context 'with a Sidekiq job log entry' do

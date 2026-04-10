@@ -58,13 +58,24 @@ module OTLP
 
     def emit_entry(entry, drain_token, logger)
       sev_num, sev_text = Parser::Severity.resolve_severity(entry)
+      trace_id = parse_trace_id(entry.parsed&.dig('trace_id'))
       logger.on_emit(
         timestamp: entry.timestamp,
         severity_number: sev_num,
         severity_text: sev_text,
         body: entry.message,
-        attributes: Parser::Attributes.attributes_for(entry, drain_token)
+        attributes: Parser::Attributes.attributes_for(entry, drain_token),
+        trace_id:
       )
+    end
+
+    # Converts a 32-char hex trace_id to the 16-byte binary format
+    # that OpenTelemetry's on_emit expects. Sentry uses this to link
+    # logs to traces from the originating application.
+    def parse_trace_id(hex)
+      return nil unless hex.is_a?(String) && hex.match?(/\A[0-9a-f]{32}\z/)
+
+      [hex].pack('H32')
     end
   end
 end
