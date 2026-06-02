@@ -73,7 +73,7 @@ module OTLP
     # that OpenTelemetry's on_emit expects. Sentry uses this to link
     # logs to traces from the originating application.
     def parse_trace_id(hex)
-      return nil unless hex.is_a?(String) && hex.match?(/\A[0-9a-f]{32}\z/)
+      return nil unless hex.is_a?(String) && hex.match?(/\A[0-9a-f]{32}\z/i)
 
       [hex].pack('H32')
     end
