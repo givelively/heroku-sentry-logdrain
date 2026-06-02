@@ -11,8 +11,6 @@ module Parser
 
     SIDEKIQ_ATTRIBUTE_KEYS = %w[class queue jid job_status].freeze
 
-    EXCLUDED_KEYS = %w[trace_id].freeze
-
     def attributes_for(entry, drain_token)
       attrs = base_attributes(entry, drain_token)
       attrs.merge!(json_attributes(entry.parsed)) if entry.parsed
@@ -38,9 +36,8 @@ module Parser
                      else
                        ['http', HTTP_ATTRIBUTE_KEYS]
                      end
-      filtered = parsed.except(*EXCLUDED_KEYS)
-      attrs = format_attributes(filtered, prefix, keys)
-      attrs['duration'] = filtered['duration'].to_s if filtered.key?('duration')
+      attrs = format_attributes(parsed, prefix, keys)
+      attrs['duration'] = parsed['duration'].to_s if parsed.key?('duration')
       attrs
     end
 
